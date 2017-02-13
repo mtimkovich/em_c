@@ -1,5 +1,9 @@
-em: em.c linenoise.c
-	$(CC) -o em em.c linenoise.c
+EXE=em
+FILES=em.c linenoise.c
+OUT=$(addprefix src/,$(FILES))
+
+$(EXE): $(OUT)
+	$(CC) -o $(EXE) $(OUT)
 
 clean:
-	rm em
+	rm $(EXE)
