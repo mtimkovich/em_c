@@ -94,10 +94,11 @@ int main()
 
     read_file(filename);
 
-    print_line(11);
-    print_range(69, 76);
+    while ((line = linenoise(":")) != NULL) {
+        if (strcmp("q", line) == 0) {
+            return 0;
+        }
 
-    while ((line = linenoise("")) != NULL) {
         printf("%s\n", line);
         free(line);
     }
