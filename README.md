@@ -1,5 +1,4 @@
-em
---
+# em
 
 A remake of the ed test editor made by me, Max
 
@@ -24,6 +23,7 @@ Todo:
 - d
 - a
 - c
+- [range]
 - e
 - w
 - s
