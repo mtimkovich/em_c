@@ -24,19 +24,27 @@ struct list_t {
 
 typedef struct list_t list;
 
+enum error_t { ADDR, CMD };
+
 FILE* fp;
 list buffer;
 int current_line;
+char* error_msg;
 
-void error()
+void error(enum error_t type)
 {
+    if (type == ADDR)
+        error_msg = "invalid address";
+    else if (type == CMD)
+        error_msg = "unknown command";
+
     printf("?\n");
 }
 
 void print_range(int start, int end, bool show_num)
 {
     if (start > end) {
-        error();
+        error(ADDR);
         return;
     }
 
@@ -160,11 +168,6 @@ char parse(const char* line, int* start, int* end)
             }
         }
 
-        if (*start > buffer.length ||
-                *start == 0 ||
-                (*end != -1 && *start > *end)) {
-            return 0;
-        }
     // TODO: Allow '$' and '.' in commands and ranges
     } else if (line[0] == '$') {
         *start = buffer.length;
@@ -182,6 +185,7 @@ int main()
 {
     char* filename = "/Users/mtimkovich/tmp/rps.py";
     char* line;
+    error_msg = "";
 
     read_file(filename);
 
@@ -192,7 +196,14 @@ int main()
         char command = parse(line, &start, &end);
 
         if (command == 0) {
-            error();
+            if (start > buffer.length ||
+                    start == 0 ||
+                    (end != -1 && start > end)) {
+                error(ADDR);
+            } else {
+                error(CMD);
+            }
+
             free(line);
             continue;
         }
@@ -215,8 +226,12 @@ int main()
             case 'd':
                 delete_range(start, end);
                 break;
+            case 'h':
+                if (strlen(error_msg) > 0)
+                    printf("%s\n", error_msg);
+                break;
             default:
-                error();
+                error(CMD);
         }
 
         free(line);
