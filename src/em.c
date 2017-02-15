@@ -55,11 +55,8 @@ void print_range(int start, int end, bool show_num)
         cur = cur->next;
         line_num++;
     }
-}
 
-void print_line(int num, bool show_num)
-{
-    print_range(num, num, show_num);
+    current_line = end;
 }
 
 void delete_line(int num)
@@ -136,6 +133,43 @@ void read_file(char* filename)
     current_line = buffer.length;
 }
 
+char parse(const char* line, int* start, int* end)
+{
+    char command = 0;
+    int matches;
+
+    if (isdigit(line[0])) {
+        matches = sscanf(line, "%d %c", start, &command);
+
+        if (matches == 1 && *start != -1) {
+            command = 'p';
+        } else if (matches == 2) {
+            if (command == ',') {
+                matches = sscanf(line, "%d , %d %c", start, end, &command);
+
+                if (matches != 3) {
+                    return 0;
+                }
+            }
+        }
+
+        if (*start > buffer.length ||
+                *start == 0 ||
+                (*end != -1 && *start > *end)) {
+            return 0;
+        }
+    } else if (line[0] == '$') {
+        current_line = buffer.length;
+        command = 'p';
+    } else if (line[0] == '.') {
+        command = 'p';
+    } else {
+        command = line[0];
+    }
+
+    return command;
+}
+
 int main()
 {
     char* filename = "/Users/mtimkovich/tmp/rps.py";
@@ -145,40 +179,33 @@ int main()
 
     while ((line = linenoise("")) != NULL) {
         int start = -1;
-        char command = 0;
+        int end = -1;
 
-        if (isdigit(line[0])) {
-            sscanf(line, "%d", &start);
-            command = 'p';
-
-            if (start > buffer.length || (start <= 0 && start != -1)) {
-                error();
-                continue;
-            } else {
-                current_line = start;
-            }
-        } else if (line[0] == '$') {
-            current_line = buffer.length;
-            command = 'p';
-        } else if (line[0] == '.') {
-            command = 'p';
-        }
+        char command = parse(line, &start, &end);
 
         if (command == 0) {
-            command = line[0];
+            error();
+            free(line);
+            continue;
         }
+
+        if (start == -1 && end == -1)
+            start = current_line;
+
+        if (start != -1 && end == -1)
+            end = start;
 
         switch (command) {
             case 'q':
                 return 0;
             case 'n':
-                print_line(current_line, true);
+                print_range(start, end, true);
                 break;
             case 'p':
-                print_line(current_line, false);
+                print_range(start, end, false);
                 break;
             case 'd':
-                delete_line(current_line);
+                delete_line(start);
                 break;
             default:
                 error();
