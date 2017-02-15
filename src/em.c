@@ -59,18 +59,10 @@ void print_range(int start, int end, bool show_num)
     current_line = end;
 }
 
-void delete_line(int num)
+void delete_node(node* nd)
 {
-    node* cur = buffer.first;
-    int line_num = 1;
-
-    while (line_num < num) {
-        cur = cur->next;
-        line_num++;
-    }
-
-    node* prev = cur->prev;
-    node* next = cur->next;
+    node* prev = nd->prev;
+    node* next = nd->next;
 
     if (prev != NULL)
         prev->next = next;
@@ -78,9 +70,9 @@ void delete_line(int num)
     if (next != NULL)
         next->prev = prev;
 
-    if (cur == buffer.first) {
+    if (nd == buffer.first) {
         buffer.first = next;
-    } else if (cur == buffer.last) {
+    } else if (nd == buffer.last) {
         buffer.last = prev;
     }
 
@@ -89,7 +81,22 @@ void delete_line(int num)
     if (current_line > buffer.length)
         current_line = buffer.length;
 
-    free(cur->line);
+    free(nd->line);
+}
+
+void delete_range(int start, int end)
+{
+    node* cur = buffer.first;
+    int line_num = 1;
+
+    while (line_num <= end) {
+        node* next = cur->next;
+        if (line_num >= start)
+            delete_node(cur);
+
+        cur = next;
+        line_num++;
+    }
 }
 
 /* read file into a doubly linked list of lines */
@@ -158,8 +165,9 @@ char parse(const char* line, int* start, int* end)
                 (*end != -1 && *start > *end)) {
             return 0;
         }
+    // TODO: Allow '$' and '.' in commands and ranges
     } else if (line[0] == '$') {
-        current_line = buffer.length;
+        *start = buffer.length;
         command = 'p';
     } else if (line[0] == '.') {
         command = 'p';
@@ -205,7 +213,7 @@ int main()
                 print_range(start, end, false);
                 break;
             case 'd':
-                delete_line(start);
+                delete_range(start, end);
                 break;
             default:
                 error();
