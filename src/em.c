@@ -89,6 +89,9 @@ void delete_line(int num)
 
     buffer.length--;
 
+    if (current_line > buffer.length)
+        current_line = buffer.length;
+
     free(cur->line);
 }
 
@@ -117,6 +120,7 @@ void read_file(char* filename)
 
         if (root == NULL) {
             root = cur;
+            root->prev = NULL;
         } else {
             prev->next = cur;
             cur->prev = prev;
@@ -128,6 +132,7 @@ void read_file(char* filename)
     }
 
     buffer.first = root;
+    buffer.last->next = NULL;
     current_line = buffer.length;
 }
 
