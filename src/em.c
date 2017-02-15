@@ -145,6 +145,13 @@ int main()
         if (isdigit(line[0])) {
             sscanf(line, "%d", &start);
             command = 'p';
+
+            if (start > buffer.length || (start <= 0 && start != -1)) {
+                error();
+                continue;
+            } else {
+                current_line = start;
+            }
         } else if (line[0] == '$') {
             current_line = buffer.length;
             command = 'p';
@@ -154,13 +161,6 @@ int main()
 
         if (command == 0) {
             command = line[0];
-        }
-
-        if (start > buffer.length || (start <= 0 && start != -1)) {
-            error();
-            continue;
-        } else {
-            current_line = start;
         }
 
         switch (command) {
