@@ -62,6 +62,36 @@ void print_line(int num, bool show_num)
     print_range(num, num, show_num);
 }
 
+void delete_line(int num)
+{
+    node* cur = buffer.first;
+    int line_num = 1;
+
+    while (line_num < num) {
+        cur = cur->next;
+        line_num++;
+    }
+
+    node* prev = cur->prev;
+    node* next = cur->next;
+
+    if (prev != NULL)
+        prev->next = next;
+
+    if (next != NULL)
+        next->prev = prev;
+
+    if (cur == buffer.first) {
+        buffer.first = next;
+    } else if (cur == buffer.last) {
+        buffer.last = prev;
+    }
+
+    buffer.length--;
+
+    free(cur->line);
+}
+
 /* read file into a doubly linked list of lines */
 void read_file(char* filename)
 {
@@ -109,7 +139,7 @@ int main()
     read_file(filename);
 
     while ((line = linenoise("")) != NULL) {
-        int start;
+        int start = -1;
         char command = 0;
 
         if (isdigit(line[0])) {
@@ -126,13 +156,12 @@ int main()
             command = line[0];
         }
 
-
-        if (start > buffer.length || start <= 0) {
+        if (start > buffer.length || (start <= 0 && start != -1)) {
             error();
             continue;
+        } else {
+            current_line = start;
         }
-
-        current_line = start;
 
         switch (command) {
             case 'q':
@@ -142,6 +171,9 @@ int main()
                 break;
             case 'p':
                 print_line(current_line, false);
+                break;
+            case 'd':
+                delete_line(current_line);
                 break;
             default:
                 error();
