@@ -6,8 +6,6 @@
 
 #include "linenoise.h"
 
-#define LBSIZE 4096
-
 struct node_t {
     char* line;
     struct node_t* prev;
@@ -25,11 +23,18 @@ struct list_t {
 
 typedef struct list_t list;
 
-enum error_t { ADDR, CMD, IFILE };
+enum error_t {
+    ADDR,
+    CMD,
+    IFILE,
+    NO_FILE,
+    MOD
+};
 
 list buffer;
 int current_line;
 char* error_msg;
+bool asked;
 
 void error(enum error_t type)
 {
@@ -39,6 +44,10 @@ void error(enum error_t type)
         error_msg = "unknown command";
     else if (type == IFILE)
         error_msg = "cannot open input file";
+    else if (type == NO_FILE)
+        error_msg = "no current filename";
+    else if (type == MOD)
+        error_msg = "warning: file modified";
 
     printf("?\n");
 }
@@ -115,6 +124,35 @@ void delete_range(int start, int end)
     }
 
     buffer.modified = true;
+    asked = false;
+}
+
+void write_buffer(char* filename)
+{
+    node* cur = buffer.first;
+    int total = 0;
+
+    if (filename == NULL) {
+        error(NO_FILE);
+        return;
+    }
+
+    FILE* fp = fopen(filename, "w");
+    if (fp == NULL) {
+        printf("%s: No such file or directory\n", filename);
+        error(IFILE);
+        return;
+    }
+
+    while (cur != NULL) {
+        int r = fprintf(fp, "%s\n", cur->line);
+        total += r;
+        cur = cur->next;
+    }
+
+    fclose(fp);
+    printf("%d\n", total);
+    buffer.modified = false;
 }
 
 /* read file into a doubly linked list of lines */
@@ -165,6 +203,7 @@ void read_file(char* filename)
     buffer.first = root;
     buffer.last->next = NULL;
     current_line = buffer.length;
+    buffer.modified = false;
 
     printf("%d\n", total);
 
@@ -255,6 +294,7 @@ int main(int argc, char* argv[])
     char* line;
     error_msg = "";
     buffer.first = NULL;
+    asked = false;
 
     if (argc > 1) {
         filename = argv[1];
@@ -288,9 +328,19 @@ int main(int argc, char* argv[])
 
         switch (command) {
             case 'q':
-                return 0;
+                if (buffer.modified && !asked) {
+                    error(MOD);
+                    asked = true;
+                } else {
+                    return 0;
+                }
+                break;
             case 'e':
-                read_file(line+2);
+                filename = line + 2;
+                read_file(filename);
+                break;
+            case 'w':
+                write_buffer(filename);
                 break;
             case 'n':
                 print_range(start, end, true);
