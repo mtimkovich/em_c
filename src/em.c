@@ -169,6 +169,7 @@ void read_file(char* filename)
     printf("%d\n", total);
 }
 
+// This is super messy. I may clean it up later
 char parse(const char* line, int* start, int* end)
 {
     char command = 0;
@@ -184,7 +185,16 @@ char parse(const char* line, int* start, int* end)
                 matches = sscanf(line, "%d , %d %c", start, end, &command);
 
                 if (matches != 3) {
-                    return 0;
+                    char end_c;
+                    matches = sscanf(line, "%d , %c %c", start, &end_c, &command);
+
+                    if (matches != 3)
+                        return 0;
+
+                    if (end_c == '$')
+                        *end = buffer.length;
+                    else if (end_c == '.')
+                        *end = current_line;
                 }
             }
         }
