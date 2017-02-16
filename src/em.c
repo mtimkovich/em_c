@@ -20,6 +20,7 @@ struct list_t {
     node* first;
     node* last;
     int length;
+    bool modified;
 };
 
 typedef struct list_t list;
@@ -113,6 +114,8 @@ void delete_range(int start, int end)
         cur = next;
         line_num++;
     }
+
+    buffer.modified = true;
 }
 
 /* read file into a doubly linked list of lines */
@@ -122,6 +125,7 @@ void read_file(char* filename)
     node* prev;
     int total = 0;
     buffer.length = 0;
+    buffer.modified = false;
 
     fp = fopen(filename, "r");
     if (fp == NULL) {
