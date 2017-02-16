@@ -334,6 +334,8 @@ int main(int argc, char* argv[])
                     return 0;
                 }
                 break;
+            case 'Q':
+                return 0;
             case 'e':
                 if (strlen(line) > 2)
                     filename = line + 2;
