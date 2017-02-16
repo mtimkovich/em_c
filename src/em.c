@@ -27,7 +27,6 @@ typedef struct list_t list;
 
 enum error_t { ADDR, CMD, IFILE };
 
-FILE* fp;
 list buffer;
 int current_line;
 char* error_msg;
@@ -46,7 +45,7 @@ void error(enum error_t type)
 
 void print_range(int start, int end, bool show_num)
 {
-    if (fp == NULL || start > end) {
+    if (buffer.first == NULL || start > end || end > buffer.length) {
         error(ADDR);
         return;
     }
@@ -101,7 +100,7 @@ void delete_range(int start, int end)
     node* cur = buffer.first;
     int line_num = 1;
 
-    if (fp == NULL) {
+    if (buffer.first == NULL || start == 0 || end > buffer.length) {
         error(ADDR);
         return;
     }
@@ -127,7 +126,7 @@ void read_file(char* filename)
     buffer.length = 0;
     buffer.modified = false;
 
-    fp = fopen(filename, "r");
+    FILE* fp = fopen(filename, "r");
     if (fp == NULL) {
         printf("%s: No such file or directory\n", filename);
         error(IFILE);
@@ -208,7 +207,7 @@ int main(int argc, char* argv[])
     char* filename = NULL;
     char* line;
     error_msg = "";
-    fp = NULL;
+    buffer.first = NULL;
 
     if (argc > 1) {
         filename = argv[1];
@@ -265,8 +264,6 @@ int main(int argc, char* argv[])
 
         free(line);
     }
-
-    fclose(fp);
 
     return 0;
 }
