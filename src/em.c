@@ -45,7 +45,7 @@ void error(enum error_t type)
 
 void print_range(int start, int end, bool show_num)
 {
-    if (buffer.first == NULL || start > end) {
+    if (buffer.first == NULL || start > end || end > buffer.length) {
         error(ADDR);
         return;
     }
@@ -100,7 +100,7 @@ void delete_range(int start, int end)
     node* cur = buffer.first;
     int line_num = 1;
 
-    if (buffer.first == NULL) {
+    if (buffer.first == NULL || start == 0 || end > buffer.length) {
         error(ADDR);
         return;
     }
@@ -197,6 +197,7 @@ int parse_macro(char c)
     }
 }
 
+// This is super messy. I may clean it up later
 char parse(const char* line, int* start, int* end)
 {
     char command = 0;
