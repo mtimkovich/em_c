@@ -192,9 +192,19 @@ int parse_macro(char c)
             return current_line + 1;
         case '-':
             return current_line - 1;
+        case ',':
+            return 1;
         default:
             return -1;
     }
+}
+
+void parse_line_num(char* line, int* start)
+{
+    if (is_str_digit(line))
+        sscanf(line, "%d", start);
+    else
+        *start = parse_macro(line[0]);
 }
 
 // This is super messy. I may clean it up later
@@ -210,31 +220,28 @@ char parse(const char* line, int* start, int* end)
             command = 'p';
         } else if (matches == 2) {
             if (command == ',') {
-                char start_str[10];
-                char end_str[10];
-                matches = sscanf(line, "%s , %s %c", start_str, end_str, &command);
+                char start_str[11];
+                char end_str[11];
+                matches = sscanf(line, "%10[0-9.$-+] , %10[0-9.$-+] %c[a-z]", start_str, end_str, &command);
 
                 if (matches != 3) {
-                    printf("%s\n", start_str);
-                    printf("%d\n", matches);
                     return 0;
                 }
 
-                if (is_str_digit(start_str))
-                    sscanf(start_str, "%d", start);
-                else
-                    *start = parse_macro(start_str[0]);
-
-                if (is_str_digit(end_str))
-                    sscanf(end_str, "%d", end);
-                else
-                    *end = parse_macro(end_str[0]);
+                parse_line_num(start_str, start);
+                parse_line_num(end_str, end);
             }
         }
 
     } else if (parse_macro(line[0]) != -1) {
-        command = 'p';
+        if (strlen(line) == 1)
+            command = 'p';
+        else
+            command = line[1];
         *start = parse_macro(line[0]);
+
+        if (line[0] == ',')
+            *end = buffer.length;
     } else {
         command = line[0];
     }
