@@ -3,7 +3,6 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
-
 #include "linenoise.h"
 
 struct node_t {
@@ -336,10 +335,16 @@ int main(int argc, char* argv[])
                 }
                 break;
             case 'e':
-                filename = line + 2;
+                if (strlen(line) > 2)
+                    filename = line + 2;
+                else
+                    error(NO_FILE);
+
                 read_file(filename);
                 break;
             case 'w':
+                if (strlen(line) > 2)
+                    filename = line + 2;
                 write_buffer(filename);
                 break;
             case 'n':
