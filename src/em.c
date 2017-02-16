@@ -24,7 +24,7 @@ struct list_t {
 
 typedef struct list_t list;
 
-enum error_t { ADDR, CMD };
+enum error_t { ADDR, CMD, IFILE };
 
 FILE* fp;
 list buffer;
@@ -37,13 +37,15 @@ void error(enum error_t type)
         error_msg = "invalid address";
     else if (type == CMD)
         error_msg = "unknown command";
+    else if (type == IFILE)
+        error_msg = "cannot open input file";
 
     printf("?\n");
 }
 
 void print_range(int start, int end, bool show_num)
 {
-    if (start > end) {
+    if (fp == NULL || start > end) {
         error(ADDR);
         return;
     }
@@ -90,12 +92,18 @@ void delete_node(node* nd)
         current_line = buffer.length;
 
     free(nd->line);
+    free(nd);
 }
 
 void delete_range(int start, int end)
 {
     node* cur = buffer.first;
     int line_num = 1;
+
+    if (fp == NULL) {
+        error(ADDR);
+        return;
+    }
 
     while (line_num <= end) {
         node* next = cur->next;
@@ -112,19 +120,27 @@ void read_file(char* filename)
 {
     node* root = NULL;
     node* prev;
-    size_t len;
+    int total = 0;
     buffer.length = 0;
 
     fp = fopen(filename, "r");
+    if (fp == NULL) {
+        printf("%s: No such file or directory\n", filename);
+        error(IFILE);
+        return;
+    }
 
     rewind(fp);
 
     for (;;) {
-        char* line = malloc(sizeof(char) * LBSIZE);
+        char* line = NULL;
+        size_t len = 0;
         int r = getline(&line, &len, fp);
 
         if (r == -1)
             break;
+
+        total += r;
 
         node* cur = malloc(sizeof(node));
         line[strlen(line)-1] = 0;
@@ -146,6 +162,8 @@ void read_file(char* filename)
     buffer.first = root;
     buffer.last->next = NULL;
     current_line = buffer.length;
+
+    printf("%d\n", total);
 }
 
 char parse(const char* line, int* start, int* end)
@@ -181,13 +199,17 @@ char parse(const char* line, int* start, int* end)
     return command;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
-    char* filename = "/Users/mtimkovich/tmp/rps.py";
+    char* filename = NULL;
     char* line;
     error_msg = "";
+    fp = NULL;
 
-    read_file(filename);
+    if (argc > 1) {
+        filename = argv[1];
+        read_file(filename);
+    }
 
     while ((line = linenoise("")) != NULL) {
         int start = -1;
@@ -217,6 +239,9 @@ int main()
         switch (command) {
             case 'q':
                 return 0;
+            case 'e':
+                read_file(line+2);
+                break;
             case 'n':
                 print_range(start, end, true);
                 break;

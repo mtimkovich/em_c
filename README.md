@@ -21,12 +21,14 @@ Input is in the form
 - p
 - n
 - d
+- e
 
 ### Todo:
-- e
 - w
 - a
 - c
 - s
 - .
 - $
+- -
+- +
