@@ -27,7 +27,6 @@ typedef struct list_t list;
 
 enum error_t { ADDR, CMD, IFILE };
 
-FILE* fp;
 list buffer;
 int current_line;
 char* error_msg;
@@ -46,7 +45,7 @@ void error(enum error_t type)
 
 void print_range(int start, int end, bool show_num)
 {
-    if (fp == NULL || start > end) {
+    if (buffer.first == NULL || start > end) {
         error(ADDR);
         return;
     }
@@ -101,7 +100,7 @@ void delete_range(int start, int end)
     node* cur = buffer.first;
     int line_num = 1;
 
-    if (fp == NULL) {
+    if (buffer.first == NULL) {
         error(ADDR);
         return;
     }
@@ -127,7 +126,7 @@ void read_file(char* filename)
     buffer.length = 0;
     buffer.modified = false;
 
-    fp = fopen(filename, "r");
+    FILE* fp = fopen(filename, "r");
     if (fp == NULL) {
         printf("%s: No such file or directory\n", filename);
         error(IFILE);
@@ -168,6 +167,34 @@ void read_file(char* filename)
     current_line = buffer.length;
 
     printf("%d\n", total);
+
+    fclose(fp);
+}
+
+bool is_str_digit(char* str)
+{
+    for (int i = 0; i < strlen(str); i++) {
+        if (!isdigit(str[i]))
+            return false;
+    }
+
+    return true;
+}
+
+int parse_macro(char c)
+{
+    switch (c) {
+        case '.':
+            return current_line;
+        case '$':
+            return buffer.length;
+        case '+':
+            return current_line + 1;
+        case '-':
+            return current_line - 1;
+        default:
+            return -1;
+    }
 }
 
 char parse(const char* line, int* start, int* end)
@@ -182,20 +209,31 @@ char parse(const char* line, int* start, int* end)
             command = 'p';
         } else if (matches == 2) {
             if (command == ',') {
-                matches = sscanf(line, "%d , %d %c", start, end, &command);
+                char start_str[10];
+                char end_str[10];
+                matches = sscanf(line, "%s , %s %c", start_str, end_str, &command);
 
                 if (matches != 3) {
+                    printf("%s\n", start_str);
+                    printf("%d\n", matches);
                     return 0;
                 }
+
+                if (is_str_digit(start_str))
+                    sscanf(start_str, "%d", start);
+                else
+                    *start = parse_macro(start_str[0]);
+
+                if (is_str_digit(end_str))
+                    sscanf(end_str, "%d", end);
+                else
+                    *end = parse_macro(end_str[0]);
             }
         }
 
-    // TODO: Allow '$' and '.' in commands and ranges
-    } else if (line[0] == '$') {
-        *start = buffer.length;
+    } else if (parse_macro(line[0]) != -1) {
         command = 'p';
-    } else if (line[0] == '.') {
-        command = 'p';
+        *start = parse_macro(line[0]);
     } else {
         command = line[0];
     }
@@ -208,7 +246,7 @@ int main(int argc, char* argv[])
     char* filename = NULL;
     char* line;
     error_msg = "";
-    fp = NULL;
+    buffer.first = NULL;
 
     if (argc > 1) {
         filename = argv[1];
@@ -265,8 +303,6 @@ int main(int argc, char* argv[])
 
         free(line);
     }
-
-    fclose(fp);
 
     return 0;
 }
