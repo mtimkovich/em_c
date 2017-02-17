@@ -160,8 +160,6 @@ void read_file(char* filename)
     node* root = NULL;
     node* prev;
     int total = 0;
-    buffer.length = 0;
-    buffer.modified = false;
 
     FILE* fp = fopen(filename, "r");
     if (fp == NULL) {
@@ -287,13 +285,103 @@ char parse(const char* line, int* start, int* end)
     return command;
 }
 
+int insert_into_buffer(list* lst, int num)
+{
+    if (lst == NULL)
+        return 0;
+
+    node* before = buffer.first;
+    int line_num = 1;
+
+    while (line_num++ < num)
+        before = before->next;
+
+    node* after = before->next;
+
+    if (num != 0) {
+        if (before != NULL)
+            before->next = lst->first;
+        lst->first->prev = before;
+
+        if (after != NULL)
+            after->prev = lst->last;
+        else
+            buffer.last = lst->last;
+        lst->last->next = after;
+    } else {
+        buffer.first = lst->first;
+        lst->last->next = before;
+    }
+
+    buffer.length += lst->length;
+    buffer.modified = true;
+    int wrote = lst->length;
+
+    free(lst);
+
+    return wrote;
+}
+
+void init_list(list* lst)
+{
+    lst->first = NULL;
+    lst->last = NULL;
+    lst->length = 0;
+    lst->modified = false;
+}
+
+list* text_input()
+{
+    list* input_buffer = malloc(sizeof(list));
+    init_list(input_buffer);
+
+    node* root = NULL;
+    node* prev;
+    char* line;
+
+    while ((line = linenoise("")) != NULL) {
+        if (strcmp(".", line) == 0) {
+            free(line);
+            break;
+        }
+
+        node* cur = malloc(sizeof(node));
+        cur->line = line;
+
+        if (root == NULL) {
+            root = cur;
+            root->prev = NULL;
+        } else {
+            prev->next = cur;
+            cur->prev = prev;
+        }
+
+        prev = cur;
+        input_buffer->last = cur;
+        input_buffer->length++;
+    }
+
+    if (root == NULL) {
+        free(input_buffer);
+        return NULL;
+    }
+
+    input_buffer->first = root;
+    input_buffer->last->next = NULL;
+
+    return input_buffer;
+}
+
 int main(int argc, char* argv[])
 {
     char* filename = NULL;
     char* line;
+    list* input;
     error_msg = "";
-    buffer.first = NULL;
     asked = false;
+    int w;
+
+    init_list(&buffer);
 
     if (argc > 1) {
         filename = argv[1];
@@ -348,6 +436,22 @@ int main(int argc, char* argv[])
                 if (strlen(line) > 2)
                     filename = line + 2;
                 write_buffer(filename);
+                break;
+            case 'a':
+                input = text_input();
+                w = insert_into_buffer(input, end);
+                current_line += w;
+                break;
+            case 'i':
+                input = text_input();
+                w = insert_into_buffer(input, start-1);
+                current_line = start-1 + w;
+                break;
+            case 'c':
+                delete_range(start, end);
+                input = text_input();
+                w = insert_into_buffer(input, start-1);
+                current_line = start-1 + w;
                 break;
             case 'n':
                 print_range(start, end, true);
